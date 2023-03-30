@@ -1,0 +1,29 @@
+---
+  - name: Check if DontManageErp App exists
+    stat: path="{{ bench_path }}/apps/dontmanageerp"
+    register: app
+
+  - name: Get the DontManageErp app
+    command: bench get-app dontmanageerp {{ dontmanageerp_repo_url }} --branch {{ dontmanageerp_branch }}
+    args:
+      creates: "{{ bench_path }}/apps/dontmanageerp"
+      chdir: "{{ bench_path }}"
+    when: not app.stat.exists and not without_dontmanageerp
+
+  - name: Check whether the site already exists
+    stat: path="{{ bench_path }}/sites/{{ site }}"
+    register: site_folder
+    when: not without_site
+
+  - name: Create a new site
+    command: "bench new-site {{ site }} --admin-password '{{ admin_password }}' --mariadb-root-password '{{ mysql_root_password }}'"
+    args:
+      chdir: "{{ bench_path }}"
+    when: not without_site and not site_folder.stat.exists
+
+  - name: Install DontManageErp to default site
+    command: "bench --site {{ site }} install-app dontmanageerp"
+    args:
+      chdir: "{{ bench_path }}"
+    when: not without_site and not without_dontmanageerp
+...
